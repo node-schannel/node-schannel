@@ -1,4 +1,4 @@
-# node-schannels
+# node-schannel
 
 A Node.js native addon wrapping the **Windows Schannel SSPI** to establish **mTLS (mutual TLS) connections** using X.509 certificates stored in the **Windows Certificate Store**.
 
@@ -18,21 +18,21 @@ Node.js's built-in `tls` module uses OpenSSL and requires PEM files for client c
 ## Installation
 
 ```bash
-npm install node-schannels
+npm install node-schannel
 ```
 
 Or from source:
 
 ```bash
-git clone <repo-url>
-cd node-schannels
+git clone https://github.com/node-schannel/node-schannel.git
+cd node-schannel
 npm install
 ```
 
 ## Quick Start
 
 ```js
-const { SchannelSocket, listCertificates } = require('node-schannels/lib/schannel-socket');
+const { SchannelSocket, listCertificates } = require('node-schannel/lib/schannel-socket');
 
 async function main() {
   // 1. Browse available certificates
@@ -61,7 +61,7 @@ main().catch(console.error);
 ### mTLS Example
 
 ```js
-const { SchannelSocket, listCertificates } = require('node-schannels/lib/schannel-socket');
+const { SchannelSocket, listCertificates } = require('node-schannel/lib/schannel-socket');
 
 async function mtlsConnect() {
   // Find a certificate with a private key
