@@ -24,7 +24,7 @@
     "install": "node-gyp rebuild",
     "build": "node-gyp rebuild",
     "build:debug": "node-gyp rebuild --debug",
-    "test": "node --test test/test-*.js"
+    "test": "node --test test/test-cert-store.js test/test-connect.js test/test-data-transfer.js test/test-errors.js test/test-lifecycle.js test/test-mtls.js test/test-tls-validation.js"
   },
   "keywords": [
     "schannel",
