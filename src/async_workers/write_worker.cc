@@ -7,7 +7,9 @@ WriteWorker::WriteWorker(
     : Napi::AsyncWorker(env),
       socket_(socket),
       data_(std::move(data)),
-      deferred_(Napi::Promise::Deferred::New(env)) {}
+      deferred_(Napi::Promise::Deferred::New(env)) {
+    socket_->Ref();
+}
 
 void WriteWorker::Execute() {
     if (!socket_->connected_) {
@@ -78,9 +80,11 @@ void WriteWorker::Execute() {
 }
 
 void WriteWorker::OnOK() {
+    socket_->Unref();
     deferred_.Resolve(Napi::Number::New(Env(), (double)bytesWritten_));
 }
 
 void WriteWorker::OnError(const Napi::Error& error) {
+    socket_->Unref();
     deferred_.Reject(error.Value());
 }

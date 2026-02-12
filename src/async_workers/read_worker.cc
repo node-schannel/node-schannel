@@ -3,7 +3,9 @@
 ReadWorker::ReadWorker(Napi::Env env, SchannelSocket* socket)
     : Napi::AsyncWorker(env),
       socket_(socket),
-      deferred_(Napi::Promise::Deferred::New(env)) {}
+      deferred_(Napi::Promise::Deferred::New(env)) {
+    socket_->Ref();
+}
 
 void ReadWorker::Execute() {
     if (!socket_->connected_) {
@@ -103,6 +105,7 @@ void ReadWorker::Execute() {
 
 void ReadWorker::OnOK() {
     Napi::Env env = Env();
+    socket_->Unref();
 
     if (connectionClosed_ && decryptedData_.empty()) {
         deferred_.Resolve(env.Null());
@@ -113,5 +116,6 @@ void ReadWorker::OnOK() {
 }
 
 void ReadWorker::OnError(const Napi::Error& error) {
+    socket_->Unref();
     deferred_.Reject(error.Value());
 }

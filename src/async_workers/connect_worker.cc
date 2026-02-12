@@ -20,7 +20,10 @@ ConnectWorker::ConnectWorker(
       certThumbprint_(certThumbprint),
       storeName_(storeName),
       storeLocation_(storeLocation),
-      deferred_(Napi::Promise::Deferred::New(env)) {}
+      deferred_(Napi::Promise::Deferred::New(env)) {
+    // prevent GC from collecting socket while async work runs
+    socket_->Ref();
+}
 
 void ConnectWorker::Execute() {
     if (!DoAcquireCredentials()) return;
@@ -177,7 +180,10 @@ bool ConnectWorker::DoHandshake() {
                 &outFlags,
                 nullptr);
 
-            socket_->hasCtxtHandle_ = true;
+            // Only mark context as valid if ISC succeeded enough to produce one
+            if (status == SEC_E_OK || status == SEC_I_CONTINUE_NEEDED) {
+                socket_->hasCtxtHandle_ = true;
+            }
             initialCall = false;
         } else {
             // Subsequent calls — pass received server data
@@ -225,6 +231,12 @@ bool ConnectWorker::DoHandshake() {
         }
 
         if (status == SEC_E_OK) {
+            // Save any extra data received after final handshake message
+            // This data belongs to the first application-level TLS record
+            // The extra data was already handled by the memmove above
+            if (recvOffset > 0) {
+                socket_->extraBuffer_.assign(recvBuffer.data(), recvBuffer.data() + recvOffset);
+            }
             break; // Handshake complete
         }
 
@@ -277,8 +289,10 @@ void ConnectWorker::QueryConnectionInfo() {
                 if (connInfo.dwProtocol == 0x00002000) {
                     socket_->negotiatedProtocol_ = "TLS 1.3";
                 } else {
-                    socket_->negotiatedProtocol_ = "Unknown (0x" +
-                        std::to_string(connInfo.dwProtocol) + ")";
+                    std::ostringstream protoOss;
+                    protoOss << "Unknown (0x" << std::hex << std::setfill('0')
+                             << std::setw(8) << connInfo.dwProtocol << ")";
+                    socket_->negotiatedProtocol_ = protoOss.str();
                 }
                 break;
         }
@@ -288,8 +302,13 @@ void ConnectWorker::QueryConnectionInfo() {
             case CALG_AES_256: socket_->negotiatedCipher_ = "AES-256"; break;
             case CALG_3DES:    socket_->negotiatedCipher_ = "3DES"; break;
             case CALG_RC4:     socket_->negotiatedCipher_ = "RC4"; break;
-            default:           socket_->negotiatedCipher_ = "Cipher(0x" +
-                                   std::to_string(connInfo.aiCipher) + ")"; break;
+            default: {
+                std::ostringstream cipherOss;
+                cipherOss << "Cipher(0x" << std::hex << std::setfill('0')
+                          << std::setw(8) << connInfo.aiCipher << ")";
+                socket_->negotiatedCipher_ = cipherOss.str();
+                break;
+            }
         }
     }
 
@@ -313,11 +332,13 @@ void ConnectWorker::OnOK() {
     info.Set("cipher", Napi::String::New(env, socket_->negotiatedCipher_));
     info.Set("serverCertSubject", Napi::String::New(env, socket_->serverCertSubject_));
     info.Set("mutualAuth", Napi::Boolean::New(env, socket_->mutualAuth_));
+    socket_->Unref();
     deferred_.Resolve(info);
 }
 
 void ConnectWorker::OnError(const Napi::Error& error) {
     // Clean up on failure
     socket_->CleanupNative();
+    socket_->Unref();
     deferred_.Reject(error.Value());
 }

@@ -3,7 +3,9 @@
 CloseWorker::CloseWorker(Napi::Env env, SchannelSocket* socket)
     : Napi::AsyncWorker(env),
       socket_(socket),
-      deferred_(Napi::Promise::Deferred::New(env)) {}
+      deferred_(Napi::Promise::Deferred::New(env)) {
+    socket_->Ref();
+}
 
 void CloseWorker::Execute() {
     if (!socket_->connected_ && socket_->sock_ == INVALID_SOCKET) {
@@ -79,9 +81,11 @@ void CloseWorker::Execute() {
 }
 
 void CloseWorker::OnOK() {
+    socket_->Unref();
     deferred_.Resolve(Env().Undefined());
 }
 
 void CloseWorker::OnError(const Napi::Error& error) {
+    socket_->Unref();
     deferred_.Reject(error.Value());
 }
