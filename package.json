@@ -1,6 +1,6 @@
 {
   "name": "node-schannel",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Node.js native addon wrapping Windows Schannel SSPI for mTLS connections using certificates from the Windows Certificate Store",
   "main": "index.js",
   "gypfile": true,
