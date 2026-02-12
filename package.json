@@ -1,0 +1,32 @@
+{
+  "name": "node-schannels",
+  "version": "0.1.0",
+  "description": "Node.js native addon wrapping Windows Schannel SSPI for mTLS connections using certificates from the Windows Certificate Store",
+  "main": "index.js",
+  "gypfile": true,
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "build": "node-gyp rebuild",
+    "build:debug": "node-gyp rebuild --debug",
+    "test": "node --test test/test-*.js"
+  },
+  "keywords": [
+    "schannel",
+    "mtls",
+    "tls",
+    "windows",
+    "certificate",
+    "native",
+    "napi"
+  ],
+  "license": "MIT",
+  "os": [
+    "win32"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "node-addon-api": "^8.3.0"
+  }
+}
